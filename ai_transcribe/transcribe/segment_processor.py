@@ -100,7 +100,7 @@ class SegmentProcessor:
         """使用iOS框架获取音频时长"""
         try:
             import objc_util
-            from objc_util import *
+            from objc_util import ObjCClass
             
             AVAsset = ObjCClass('AVAsset')
             NSURL = ObjCClass('NSURL')
@@ -190,7 +190,7 @@ class SegmentProcessor:
         """使用iOS框架分割音频"""
         try:
             import objc_util
-            from objc_util import *
+            from objc_util import ObjCClass
             
             segments = []
             base_name = os.path.splitext(os.path.basename(audio_path))[0]

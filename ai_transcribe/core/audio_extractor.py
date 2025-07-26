@@ -68,7 +68,7 @@ class AudioExtractor:
             # 导入objc_util（仅在iOS环境中可用）
             try:
                 import objc_util
-                from objc_util import *
+                from objc_util import ObjCClass
                 
                 # 创建AVAsset
                 AVAsset = ObjCClass('AVAsset')

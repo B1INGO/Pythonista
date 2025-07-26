@@ -70,7 +70,7 @@ class FormatConverter:
         """使用iOS框架转换音频格式"""
         try:
             import objc_util
-            from objc_util import *
+            from objc_util import ObjCClass
             
             # 使用AVFoundation进行音频格式转换
             AVAsset = ObjCClass('AVAsset')
