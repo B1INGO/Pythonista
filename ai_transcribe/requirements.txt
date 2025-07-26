@@ -1,0 +1,13 @@
+requests>=2.31.0
+Pillow>=9.5.0
+
+# Note: The following modules are provided by Pythonista iOS app:
+# - ui (Pythonista UI framework)
+# - keychain (iOS keychain access)
+# - appex (iOS app extensions)
+# - objc_util (Objective-C bridge)
+# - console (Pythonista console utilities)
+
+# Optional dependencies for enhanced functionality:
+# pydub>=0.25.1  # For advanced audio processing (requires external tools)
+# moviepy>=1.0.3 # For video processing (requires external tools)
