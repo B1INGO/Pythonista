@@ -23,12 +23,35 @@ class ResultView:
         
         self._create_ui()
     
+    def _get_screen_size(self):
+        """获取屏幕尺寸"""
+        try:
+            # 尝试获取实际屏幕尺寸
+            import console
+            if hasattr(console, 'get_window_size'):
+                console_size = console.get_window_size()
+                width = max(375, console_size[0] * 10)
+                height = max(667, console_size[1] * 20)
+            else:
+                width, height = 375, 667
+                
+            logger.debug(f"屏幕尺寸: {width}x{height}")
+            return width, height
+            
+        except Exception as e:
+            logger.warning(f"获取屏幕尺寸失败，使用默认值: {e}")
+            return 375, 667
+    
     def _create_ui(self):
         """创建结果界面"""
         try:
+            # 获取动态尺寸
+            self.screen_width, self.screen_height = self._get_screen_size()
+            
             # 主视图
             self.view = ui.View(name='处理结果')
             self.view.background_color = '#f0f0f0'
+            self.view.frame = (0, 0, self.screen_width, self.screen_height)
             
             # 工具栏
             self._create_toolbar()
@@ -47,27 +70,32 @@ class ResultView:
     
     def _create_toolbar(self):
         """创建工具栏"""
+        toolbar_height = max(50, int(self.screen_height * 0.07))
+        
         # 工具栏背景
         toolbar_bg = ui.View(name='toolbar_bg')
         toolbar_bg.background_color = '#ffffff'
-        toolbar_bg.frame = (0, 0, self.view.width, 50)
+        toolbar_bg.frame = (0, 0, self.screen_width, toolbar_height)
         toolbar_bg.flex = 'W'
         self.view.add_subview(toolbar_bg)
         
         # 标题
         title_label = ui.Label(name='title_label')
         title_label.text = '处理结果'
-        title_label.font = ('<system-bold>', 18)
+        title_label.font = ('<system-bold>', max(16, int(self.screen_width / 20)))
         title_label.text_color = '#333333'
-        title_label.frame = (20, 10, 200, 30)
+        title_label.frame = (20, (toolbar_height - 30) // 2, 200, 30)
         toolbar_bg.add_subview(title_label)
         
         # 关闭按钮
+        button_size = max(30, int(toolbar_height * 0.6))
         close_button = ui.Button(name='close_button')
         close_button.title = '✕'
-        close_button.font = ('<system>', 20)
+        close_button.font = ('<system>', max(18, int(button_size * 0.7)))
         close_button.text_color = '#666666'
-        close_button.frame = (self.view.width - 40, 10, 30, 30)
+        close_button.frame = (self.screen_width - button_size - 10, 
+                             (toolbar_height - button_size) // 2, 
+                             button_size, button_size)
         close_button.flex = 'L'
         close_button.action = self._close_action
         toolbar_bg.add_subview(close_button)
@@ -75,35 +103,90 @@ class ResultView:
         # 分隔线
         separator = ui.View(name='separator')
         separator.background_color = '#e0e0e0'
-        separator.frame = (0, 49, self.view.width, 1)
+        separator.frame = (0, toolbar_height - 1, self.screen_width, 1)
         separator.flex = 'W'
-        toolbar_bg.add_subview(separator)
+        self.view.add_subview(separator)
+        
+        # 保存工具栏高度
+        self._toolbar_height = toolbar_height
     
     def _create_text_area(self):
         """创建文本显示区域"""
+        margin = 10
+        action_bar_height = max(60, int(self.screen_height * 0.08))
+        
         # 文本视图
         self.text_view = ui.TextView(name='text_view')
-        self.text_view.font = ('<system>', 16)
+        self.text_view.font = ('<system>', max(14, int(self.screen_width / 26)))
         self.text_view.editable = True
         self.text_view.text_color = '#333333'
         self.text_view.background_color = '#ffffff'
-        self.text_view.frame = (10, 60, self.view.width - 20, self.view.height - 130)
+        self.text_view.frame = (margin, 
+                              self._toolbar_height + 10, 
+                              self.screen_width - 2*margin, 
+                              self.screen_height - self._toolbar_height - action_bar_height - 20)
         self.text_view.flex = 'WH'
         self.view.add_subview(self.text_view)
+        
+        # 保存动作栏高度
+        self._action_bar_height = action_bar_height
     
     def _create_action_bar(self):
         """创建操作栏"""
+        margin = 10
+        
         # 操作栏背景
         action_bg = ui.View(name='action_bg')
         action_bg.background_color = '#ffffff'
-        action_bg.frame = (0, self.view.height - 60, self.view.width, 60)
+        action_bg.frame = (0, self.screen_height - self._action_bar_height, 
+                          self.screen_width, self._action_bar_height)
         action_bg.flex = 'WT'
         self.view.add_subview(action_bg)
         
         # 分隔线
         separator = ui.View(name='separator')
         separator.background_color = '#e0e0e0'
-        separator.frame = (0, 0, self.view.width, 1)
+        separator.frame = (0, 0, self.screen_width, 1)
+        separator.flex = 'W'
+        action_bg.add_subview(separator)
+        
+        # 按钮尺寸
+        button_height = max(35, int(self._action_bar_height * 0.6))
+        button_width = int((self.screen_width - 4*margin) / 3)  # 3 buttons
+        button_y = (self._action_bar_height - button_height) // 2
+        
+        # 保存按钮
+        save_button = ui.Button(name='save_button')
+        save_button.title = '💾 保存'
+        save_button.font = ('<system>', max(12, int(self.screen_width / 30)))
+        save_button.background_color = '#007AFF'
+        save_button.tint_color = 'white'
+        save_button.corner_radius = 6
+        save_button.frame = (margin, button_y, button_width, button_height)
+        save_button.action = self._save_action
+        action_bg.add_subview(save_button)
+        
+        # 复制按钮
+        copy_button = ui.Button(name='copy_button')
+        copy_button.title = '📋 复制'
+        copy_button.font = ('<system>', max(12, int(self.screen_width / 30)))
+        copy_button.background_color = '#34C759'
+        copy_button.tint_color = 'white'
+        copy_button.corner_radius = 6
+        copy_button.frame = (margin + button_width + margin, button_y, button_width, button_height)
+        copy_button.action = self._copy_action
+        action_bg.add_subview(copy_button)
+        
+        # 分享按钮
+        share_button = ui.Button(name='share_button')
+        share_button.title = '📤 分享'
+        share_button.font = ('<system>', max(12, int(self.screen_width / 30)))
+        share_button.background_color = '#FF9500'
+        share_button.tint_color = 'white'
+        share_button.corner_radius = 6
+        share_button.frame = (self.screen_width - margin - button_width, button_y, button_width, button_height)
+        share_button.action = self._share_action
+        action_bg.add_subview(share_button)
         separator.flex = 'W'
         action_bg.add_subview(separator)
         
