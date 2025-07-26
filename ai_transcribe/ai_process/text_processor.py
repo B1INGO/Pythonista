@@ -9,8 +9,7 @@ from ..config import config
 from ..utils.logger import get_logger
 from ..utils.cache import cache
 from .deepseek_client import DeepSeekClient
-from .prompt_templates import templates
-from .custom_prompts import custom_prompts
+# Note: Import removed - now using unified config system
 
 logger = get_logger(__name__)
 
@@ -69,9 +68,9 @@ class TextProcessor:
                 system_prompt=template.get('system_prompt')
             )
             
-            # 更新模板使用统计
-            if success and template_id.startswith('custom_'):
-                custom_prompts.increment_usage(template_id.replace('custom_', ''))
+            # 更新模板使用统计（暂时移除，等待后续实现）
+            # if success and template_id.startswith('custom_'):
+            #     custom_prompts.increment_usage(template_id.replace('custom_', ''))
             
             # 缓存结果
             if success and processed_text and self.use_cache:
@@ -160,19 +159,19 @@ class TextProcessor:
             return False, None, error_msg
     
     def _get_template(self, template_id: str) -> Optional[Dict[str, Any]]:
-        """获取模板（支持内置模板和自定义模板）"""
+        """获取模板（使用统一配置系统）"""
         try:
-            # 先尝试获取内置模板
-            template = templates.get_template(template_id)
+            # 使用统一的配置系统获取提示词
+            template = config.get_prompt(template_id)
             if template:
                 return template
             
-            # 尝试获取自定义模板
+            # 为了向后兼容，检查是否有 custom_ 前缀
             if template_id.startswith('custom_'):
                 custom_id = template_id.replace('custom_', '')
-                custom_template = custom_prompts.get_prompt(custom_id)
-                if custom_template:
-                    return custom_template
+                template = config.get_prompt(custom_id)
+                if template:
+                    return template
             
             logger.warning(f"模板未找到: {template_id}")
             return None
@@ -180,6 +179,18 @@ class TextProcessor:
         except Exception as e:
             logger.error(f"获取模板异常: {e}")
             return None
+    
+    def get_available_templates(self) -> Dict[str, Dict[str, Any]]:
+        """获取所有可用模板"""
+        return config.get_all_prompts()
+    
+    def get_template_categories(self) -> List[str]:
+        """获取模板分类"""
+        return config.get_prompt_categories()
+    
+    def search_templates(self, keyword: str) -> Dict[str, Dict[str, Any]]:
+        """搜索模板"""
+        return config.search_prompts(keyword)
     
     def _get_cache_key(self, text: str, template_id: str) -> str:
         """生成缓存键"""

@@ -21,12 +21,35 @@ class SettingsView:
         
         self._create_ui()
     
+    def _get_screen_size(self):
+        """获取屏幕尺寸"""
+        try:
+            # 尝试获取实际屏幕尺寸
+            import console
+            if hasattr(console, 'get_window_size'):
+                console_size = console.get_window_size()
+                width = max(375, console_size[0] * 10)
+                height = max(667, console_size[1] * 20)
+            else:
+                width, height = 375, 667
+                
+            logger.debug(f"屏幕尺寸: {width}x{height}")
+            return width, height
+            
+        except Exception as e:
+            logger.warning(f"获取屏幕尺寸失败，使用默认值: {e}")
+            return 375, 667
+    
     def _create_ui(self):
         """创建设置界面"""
         try:
+            # 获取动态尺寸
+            self.screen_width, self.screen_height = self._get_screen_size()
+            
             # 主视图
             self.view = ui.View(name='设置')
             self.view.background_color = '#f0f0f0'
+            self.view.frame = (0, 0, self.screen_width, self.screen_height)
             
             # 标题栏
             self._create_title_bar()
@@ -42,27 +65,32 @@ class SettingsView:
     
     def _create_title_bar(self):
         """创建标题栏"""
+        title_height = max(60, int(self.screen_height * 0.08))
+        
         # 标题栏背景
         title_bg = ui.View(name='title_bg')
         title_bg.background_color = '#ffffff'
-        title_bg.frame = (0, 0, self.view.width, 60)
+        title_bg.frame = (0, 0, self.screen_width, title_height)
         title_bg.flex = 'W'
         self.view.add_subview(title_bg)
         
         # 标题
         title_label = ui.Label(name='title_label')
         title_label.text = '设置'
-        title_label.font = ('<system-bold>', 20)
+        title_label.font = ('<system-bold>', max(16, int(self.screen_width / 20)))
         title_label.text_color = '#333333'
-        title_label.frame = (20, 15, 200, 30)
+        title_label.frame = (20, (title_height - 30) // 2, 200, 30)
         title_bg.add_subview(title_label)
         
         # 完成按钮
+        button_width = max(50, int(self.screen_width / 7))
         done_button = ui.Button(name='done_button')
         done_button.title = '完成'
-        done_button.font = ('<system>', 16)
+        done_button.font = ('<system>', max(14, int(self.screen_width / 26)))
         done_button.text_color = '#007AFF'
-        done_button.frame = (self.view.width - 60, 15, 50, 30)
+        done_button.frame = (self.screen_width - button_width - 10, 
+                           (title_height - 30) // 2, 
+                           button_width, 30)
         done_button.flex = 'L'
         done_button.action = self._done_action
         title_bg.add_subview(done_button)
@@ -70,15 +98,20 @@ class SettingsView:
         # 分隔线
         separator = ui.View(name='separator')
         separator.background_color = '#e0e0e0'
-        separator.frame = (0, 59, self.view.width, 1)
+        separator.frame = (0, title_height - 1, self.screen_width, 1)
         separator.flex = 'W'
-        title_bg.add_subview(separator)
+        self.view.add_subview(separator)
+        
+        # 保存标题栏高度
+        self._title_height = title_height
     
     def _create_settings_content(self):
         """创建设置内容"""
         # 使用表格视图显示设置选项
         self.section_table = ui.TableView(name='section_table')
-        self.section_table.frame = (0, 60, self.view.width, self.view.height - 60)
+        self.section_table.frame = (0, self._title_height, 
+                                  self.screen_width, 
+                                  self.screen_height - self._title_height)
         self.section_table.flex = 'WH'
         self.section_table.data_source = SettingsDataSource(self)
         self.section_table.delegate = SettingsDelegate(self)

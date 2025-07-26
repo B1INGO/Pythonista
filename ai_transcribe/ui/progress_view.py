@@ -27,13 +27,50 @@ class ProgressView:
         
         self._create_ui()
     
+    def _get_dynamic_size(self):
+        """获取动态界面尺寸"""
+        try:
+            # 尝试获取屏幕尺寸
+            import console
+            screen_width = console.get_window_size()[0] if hasattr(console, 'get_window_size') else 375
+            screen_height = 667  # 默认iPhone 6/7/8大小
+            
+            # 如果有ui模块可用，尝试获取实际屏幕尺寸
+            try:
+                import ui
+                # 创建临时视图来获取屏幕尺寸
+                temp_view = ui.View()
+                temp_view.present('fullscreen', hide_title_bar=True)
+                screen_width = temp_view.width
+                screen_height = temp_view.height
+                temp_view.close()
+            except:
+                pass
+            
+            # 计算进度视图的合适尺寸
+            # 宽度：屏幕宽度的80%，但不少于300px，不超过500px
+            width = max(300, min(500, int(screen_width * 0.8)))
+            # 高度：根据内容需要，最小200px
+            height = max(200, int(width * 0.6))
+            
+            logger.debug(f"动态尺寸计算: {width}x{height} (屏幕: {screen_width}x{screen_height})")
+            return width, height
+            
+        except Exception as e:
+            logger.warning(f"获取动态尺寸失败，使用默认值: {e}")
+            # 返回合理的默认尺寸
+            return 350, 220
+    
     def _create_ui(self):
         """创建进度界面"""
         try:
+            # 获取动态尺寸
+            width, height = self._get_dynamic_size()
+            
             # 主视图
             self.view = ui.View(name='处理进度')
             self.view.background_color = '#f0f0f0'
-            self.view.frame = (0, 0, 300, 200)
+            self.view.frame = (0, 0, width, height)
             
             # 标题
             title_label = ui.Label(name='title_label')
@@ -322,14 +359,24 @@ class MultiStepProgressView(ProgressView):
     def _create_step_indicator(self):
         """创建步骤指示器"""
         try:
-            # 调整现有组件位置
-            self.progress_bar.frame = (20, 90, self.view.width - 40, 10)
-            self.status_label.frame = (20, 110, self.view.width - 40, 25)
-            self.detail_label.frame = (20, 140, self.view.width - 40, 35)
-            self.cancel_button.frame = (self.view.width/2 - 40, 185, 80, 35)
+            # 获取基础高度用于动态布局
+            width, base_height = self._get_dynamic_size()
             
-            # 扩展视图高度
-            self.view.frame = (0, 0, self.view.width, 230)
+            # 调整现有组件位置 - 使用动态计算
+            progress_y = base_height * 0.45  # 45% of height
+            status_y = progress_y + 30
+            detail_y = status_y + 35
+            button_y = detail_y + 45
+            
+            self.progress_bar.frame = (20, progress_y, self.view.width - 40, 10)
+            self.status_label.frame = (20, status_y, self.view.width - 40, 25)
+            self.detail_label.frame = (20, detail_y, self.view.width - 40, 35)
+            self.cancel_button.frame = (self.view.width/2 - 40, button_y, 80, 35)
+            
+            # 扩展视图高度 - 动态计算
+            width, base_height = self._get_dynamic_size()
+            extended_height = base_height + 30  # 为步骤指示器添加额外高度
+            self.view.frame = (0, 0, width, extended_height)
             
             # 步骤指示器
             steps_label = ui.Label(name='steps_label')
@@ -337,7 +384,7 @@ class MultiStepProgressView(ProgressView):
             steps_label.font = ('<system>', 14)
             steps_label.text_color = '#007AFF'
             steps_label.alignment = ui.ALIGN_CENTER
-            steps_label.frame = (20, 55, self.view.width - 40, 20)
+            steps_label.frame = (20, progress_y - 35, self.view.width - 40, 20)
             steps_label.flex = 'W'
             self.view.add_subview(steps_label)
             
